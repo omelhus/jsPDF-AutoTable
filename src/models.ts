@@ -12,8 +12,8 @@ import { parseSpacing, MarginPadding } from './common'
 import { TableInput } from './inputParser'
 
 export type Pos = { x: number; y: number }
-export type PageHook = (data: HookData) => void | boolean
-export type CellHook = (data: CellHookData) => void | boolean
+export type PageHook = (data: HookData) => Promise<void | boolean>
+export type CellHook = (data: CellHookData) => Promise<void | boolean>
 
 export interface HookProps {
   didParseCell: CellHook[]
@@ -115,17 +115,17 @@ export class Table {
     return this.head.concat(this.body).concat(this.foot)
   }
 
-  callCellHooks(
+  async callCellHooks(
     doc: DocHandler,
     handlers: CellHook[],
     cell: Cell,
     row: Row,
     column: Column,
     cursor: { x: number; y: number } | null,
-  ): boolean {
+  ): Promise<boolean> {
     for (const handler of handlers) {
       const data = new CellHookData(doc, this, cell, row, column, cursor)
-      const result = handler(data) === false
+      const result = await handler(data) === false
       // Make sure text is always string[] since user can assign string
       cell.text = Array.isArray(cell.text) ? cell.text : [cell.text]
       if (result) {
@@ -135,15 +135,15 @@ export class Table {
     return true
   }
 
-  callEndPageHooks(doc: DocHandler, cursor: { x: number; y: number }) {
+  async callEndPageHooks(doc: DocHandler, cursor: { x: number; y: number }) {
     doc.applyStyles(doc.userStyles)
     for (const handler of this.hooks.didDrawPage) {
-      handler(new HookData(doc, this, cursor))
+      await handler(new HookData(doc, this, cursor))
     }
   }
-  callWillDrawPageHooks(doc: DocHandler, cursor: { x: number; y: number }) {
+  async callWillDrawPageHooks(doc: DocHandler, cursor: { x: number; y: number }) {
     for (const handler of this.hooks.willDrawPage) {
-      handler(new HookData(doc, this, cursor))
+      await handler(new HookData(doc, this, cursor))
     }
   }
 

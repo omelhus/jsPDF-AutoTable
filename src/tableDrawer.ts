@@ -6,7 +6,7 @@ import { assign } from './polyfills'
 import autoTableText from './autoTableText'
 import { calculateAllColumnsCanFitInPage } from './tablePrinter'
 
-export function drawTable(jsPDFDoc: jsPDFDocument, table: Table): void {
+export async function drawTable(jsPDFDoc: jsPDFDocument, table: Table): Promise<void> {
   const settings = table.settings
   const startY = settings.startY
   const margin = settings.margin
@@ -34,7 +34,7 @@ export function drawTable(jsPDFDoc: jsPDFDocument, table: Table): void {
     nextPage(doc)
     cursor.y = margin.top
   }
-  table.callWillDrawPageHooks(doc, cursor)
+  await table.callWillDrawPageHooks(doc, cursor)
 
   const startPos = assign({}, cursor)
 
@@ -57,10 +57,11 @@ export function drawTable(jsPDFDoc: jsPDFDocument, table: Table): void {
     }
 
     doc.applyStyles(doc.userStyles)
-    table.body.forEach((row, index) => {
+    let index = 0;
+    for(const row of table.body) {
       const isLastRow = index === table.body.length - 1
-      printFullRow(doc, table, row, isLastRow, startPos, cursor, table.columns)
-    })
+      await printFullRow(doc, table, row, isLastRow, startPos, cursor, table.columns)
+    }
     doc.applyStyles(doc.userStyles)
 
     if (settings.showFoot === 'lastPage' || settings.showFoot === 'everyPage') {
@@ -71,7 +72,7 @@ export function drawTable(jsPDFDoc: jsPDFDocument, table: Table): void {
   }
 
   addTableBorder(doc, table, startPos, cursor)
-  table.callEndPageHooks(doc, cursor)
+  await table.callEndPageHooks(doc, cursor)
 
   table.finalY = cursor.y
   jsPDFDoc.lastAutoTable = table
@@ -373,7 +374,7 @@ function shouldPrintOnCurrentPage(
   return true
 }
 
-function printFullRow(
+async function printFullRow(
   doc: DocHandler,
   table: Table,
   row: Row,
@@ -385,21 +386,21 @@ function printFullRow(
   const remainingSpace = getRemainingPageSpace(doc, table, isLastRow, cursor)
   if (row.canEntireRowFit(remainingSpace, columns)) {
     // The row fits in the current page
-    printRow(doc, table, row, cursor, columns)
+    await printRow(doc, table, row, cursor, columns)
   } else if (shouldPrintOnCurrentPage(doc, row, remainingSpace, table)) {
     // The row gets split in two here, each piece in one page
     const remainderRow = modifyRowToFit(row, remainingSpace, table, doc)
-    printRow(doc, table, row, cursor, columns)
+    await printRow(doc, table, row, cursor, columns)
     addPage(doc, table, startPos, cursor, columns)
-    printFullRow(doc, table, remainderRow, isLastRow, startPos, cursor, columns)
+    await printFullRow(doc, table, remainderRow, isLastRow, startPos, cursor, columns)
   } else {
     // The row get printed entirelly on the next page
     addPage(doc, table, startPos, cursor, columns)
-    printFullRow(doc, table, row, isLastRow, startPos, cursor, columns)
+    await printFullRow(doc, table, row, isLastRow, startPos, cursor, columns)
   }
 }
 
-function printRow(
+async function printRow(
   doc: DocHandler,
   table: Table,
   row: Row,
@@ -418,7 +419,7 @@ function printRow(
     cell.x = cursor.x
     cell.y = cursor.y
 
-    const result = table.callCellHooks(
+    const result = await table.callCellHooks(
       doc,
       table.hooks.willDrawCell,
       cell,
@@ -448,7 +449,7 @@ function printRow(
       doc.getDocument(),
     )
 
-    table.callCellHooks(doc, table.hooks.didDrawCell, cell, row, column, cursor)
+    await table.callCellHooks(doc, table.hooks.didDrawCell, cell, row, column, cursor)
 
     cursor.x += column.width
   }

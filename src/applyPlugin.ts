@@ -9,7 +9,7 @@ import { Table } from './models'
 
 export default function (jsPDF: jsPDFConstructor) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsPDF.API.autoTable = function (this: jsPDFDocument, ...args: any[]) {
+  jsPDF.API.autoTable = async function (this: jsPDFDocument, ...args: any[]) {
     let options: UserOptions
     if (args.length === 1) {
       options = args[0]
@@ -21,7 +21,7 @@ export default function (jsPDF: jsPDFConstructor) {
     }
     const input = parseInput(this, options)
     const table = createTable(this, input)
-    drawTable(this, table)
+    await drawTable(this, table)
     return this
   }
 

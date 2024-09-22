@@ -80,8 +80,8 @@ export type Pos = {
 	x: number;
 	y: number;
 };
-export type PageHook = (data: HookData) => void | boolean;
-export type CellHook = (data: CellHookData) => void | boolean;
+export type PageHook = (data: HookData) => Promise<void | boolean>;
+export type CellHook = (data: CellHookData) => Promise<void | boolean>;
 export interface HookProps {
 	didParseCell: CellHook[];
 	willDrawCell: CellHook[];
@@ -142,15 +142,15 @@ export declare class Table {
 	callCellHooks(doc: DocHandler, handlers: CellHook[], cell: Cell, row: Row, column: Column, cursor: {
 		x: number;
 		y: number;
-	} | null): boolean;
+	} | null): Promise<boolean>;
 	callEndPageHooks(doc: DocHandler, cursor: {
 		x: number;
 		y: number;
-	}): void;
+	}): Promise<void>;
 	callWillDrawPageHooks(doc: DocHandler, cursor: {
 		x: number;
 		y: number;
-	}): void;
+	}): Promise<void>;
 	getWidth(pageWidth: number): number;
 }
 export declare class Row {
