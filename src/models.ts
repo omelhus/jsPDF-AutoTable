@@ -125,7 +125,7 @@ export class Table {
   ): Promise<boolean> {
     for (const handler of handlers) {
       const data = new CellHookData(doc, this, cell, row, column, cursor)
-      const result = await handler(data) === false
+      const result = (await handler(data)) === false
       // Make sure text is always string[] since user can assign string
       cell.text = Array.isArray(cell.text) ? cell.text : [cell.text]
       if (result) {
@@ -141,7 +141,10 @@ export class Table {
       await handler(new HookData(doc, this, cursor))
     }
   }
-  async callWillDrawPageHooks(doc: DocHandler, cursor: { x: number; y: number }) {
+  async callWillDrawPageHooks(
+    doc: DocHandler,
+    cursor: { x: number; y: number },
+  ) {
     for (const handler of this.hooks.willDrawPage) {
       await handler(new HookData(doc, this, cursor))
     }
